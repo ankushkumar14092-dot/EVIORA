@@ -87,19 +87,19 @@ Build a highly human-like multimodal AI conversational agent where the user feel
 
 ### Core Loop
 
-```
-User Experience
-→ Multimodal Perception
-→ User State Estimation
-→ Cognitive Appraisal
-→ AI Persistent Affective State
-→ Memory / Relationship State
-→ Reasoning
-→ Behavior Planning
-→ Text + Voice + Facial Expression + Timing
-→ Avatar
-→ New Interaction
-→ Update Internal State
+```mermaid
+flowchart TD
+    A[User Experience] --> B[Multimodal Perception]
+    B --> C[User State Estimation]
+    C --> D[Cognitive Appraisal]
+    D --> E[AI Persistent Affective State]
+    E --> F[Memory / Relationship State]
+    F --> G[Reasoning]
+    G --> H[Behavior Planning]
+    H --> I[Text + Voice + Face + Timing]
+    I --> J[Avatar]
+    J --> K[New Interaction]
+    K --> E
 ```
 
 ---
@@ -341,78 +341,6 @@ User Experience
 
 ## 5. PROPOSED ARCHITECTURE — UPGRADED MASTER DIAGRAM [OUR PROPOSED v2.0]
 
-```
-                         USER
-                           │
-             ┌─────────────┼─────────────┐
-             ↓             ↓             ↓
-           VOICE          FACE          TEXT
-             │             │             │
-             └─────────────┼─────────────┘
-                           ↓
-              MULTIMODAL STATE ESTIMATOR
-              (emotion + uncertainty output)
-                           ↓
-               PERSONALIZED FUSION
-               (user-specific calibration)
-                           ↓
-                COGNITIVE APPRAISAL
-                           ↓
-       ┌──────────────────────────────────────┐
-       │      PERSISTENT AFFECTIVE STATE      │
-       │                                      │
-       │  EMOTION (short-term, seconds)       │
-       │  MOOD    (medium-term, hours/days)   │
-       │  PERSONALITY (stable, long-term)     │
-       │  STRESS | TRUST | RELATIONSHIP       │
-       └────────────────┬─────────────────────┘
-                        ↕  (bidirectional)
-                MEMORY SYSTEM
-                        ↕  (bidirectional)
-              RELATIONSHIP MODEL
-                        ↓
-               REFLECTION LAYER
-                        ↓
-              AFFECT-CONDITIONED
-                   COGNITION
-              (attention → retrieval
-               → interpretation
-               → goal priority
-               → decision)
-                        ↓
-                BEHAVIOR POLICY
-                        ↓
-              BEHAVIOR PLAN
-              (single source of truth)
-                        ↓
-        ┌───────────────┼────────────────┐
-        ↓               ↓                ↓
-      TEXT            VOICE             FACE
-        ↓               ↓                ↓
-   Language         Prosody          Expression
-                    Timing            Gaze
-                    Pause             Gesture
-        └───────────────┼────────────────┘
-                        ↓
-              CROSS-MODAL CONSISTENCY
-                   CHECKER
-                        ↓
-             NATURAL TIMING ENGINE
-                        ↓
-                 AVATAR ENGINE
-                        ↓
-               HUMAN-LIKENESS
-               CONTROLLER
-                        ↓
-                      USER
-                        │
-                        └──────────→ NEW EXPERIENCE
-                                          ↓
-                                    STATE UPDATE
-                                    MEMORY UPDATE
-                                    REFLECTION
-```
-
 ### Mermaid — Upgraded Architecture
 
 ```mermaid
@@ -637,16 +565,13 @@ v2.0 had user-specific weights as a static profile. v2.1 makes them **continuous
 
 Recent research (ScienceDirect, 2025) confirms speaker-specific long-term context significantly improves emotion recognition accuracy over generic models.
 
-```
-Generic weights (cold start)
-      ↓
-User calibration (first 3 sessions)
-      ↓
-Online learning (every session)
-      ↓
-Learned reliability per modality
-      ↓
-Uncertainty-aware fusion
+```mermaid
+flowchart TD
+    A[Generic Weights\ncold start] --> B[User Calibration\nfirst 3 sessions]
+    B --> C[Online Learning\nevery session]
+    C --> D[Learned Reliability\nper modality]
+    D --> E[Uncertainty-Aware Fusion]
+    E --> F[User State Vector + Confidence]
 ```
 
 ```python
@@ -703,24 +628,25 @@ Feedback signals available:
 ```
 
 When uncertainty is high:
-```
-ambiguity_flag = true
-      ↓
-Don't assume
-      ↓
-"You're sounding a little frustrated — am I reading that right?"
+
+```mermaid
+flowchart TD
+    A{ambiguity_flag = true?} -->|yes| B[Do NOT assume emotion]
+    B --> C[Generate gentle check-in]
+    C --> D[\"You're sounding a little frustrated — am I reading that right?\"]
+    A -->|no| E[Proceed with fused state]
 ```
 
 #### Conflict Resolution
-```
-User says: "I'm fine"       → text_valence = +0.3
-Voice prosody:              → voice_valence = -0.6
-Facial expression:          → face_valence = -0.4
 
-Fusion result:              → fused_valence = -0.43  (text overridden)
-Conflict flag:              → text_voice_conflict = true
-Uncertainty:                → 0.31 (elevated due to conflict)
-Agent response:             → gentle check-in, not assumption
+```mermaid
+flowchart LR
+    T[Text: I'm fine\nvalence +0.3] --> F[Fusion Engine]
+    V[Voice: sad tone\nvalence -0.6] --> F
+    FA[Face: low engagement\nvalence -0.4] --> F
+    F --> R[fused_valence = -0.43\ntext overridden]
+    F --> CF[conflict_flag = true\nuncertainty = 0.31]
+    CF --> AG[Agent: gentle check-in\nnot assumption]
 ```
 
 #### Missing Modality Handling
@@ -757,12 +683,12 @@ class AppraisalState:
 
 #### Appraisal Process
 
-```
-Event (User State + Context)
-→ Primary Appraisal: Is this relevant? Is it good or bad?
-→ Secondary Appraisal: Who caused it? Can I control it?
-→ Reappraisal: Given memory + relationship, reinterpret
-→ Appraisal State Output
+```mermaid
+flowchart TD
+    E[Event: User State + Context] --> PA[Primary Appraisal\nIs this relevant? Good or bad?]
+    PA --> SA[Secondary Appraisal\nWho caused it? Can I control it?]
+    SA --> RA[Reappraisal\nGiven memory + relationship, reinterpret]
+    RA --> OUT[Appraisal State Output]
 ```
 
 #### Example
@@ -788,24 +714,22 @@ Appraisal:
 
 These are NOT the same thing and must NOT be mixed in one variable.
 
-```
-EMOTION     → short-term  (seconds to minutes)   → triggered by events
-MOOD        → medium-term (hours to days)         → drifts slowly
-PERSONALITY → long-term   (stable)                → constrains range
-RELATIONSHIP→ long-term + evolving               → shapes behavior style
+```mermaid
+flowchart LR
+    E[EMOTION\nshort-term\nseconds-minutes\ntriggered by events]
+    M[MOOD\nmedium-term\nhours-days\ndrifts slowly]
+    P[PERSONALITY\nlong-term\nstable\nconstrains range]
+    R[RELATIONSHIP\nlong-term + evolving\nshapes behavior style]
 ```
 
 Example:
-```
-User insults the agent
-      ↓
-Emotion = hurt (immediate, high intensity)
-      ↓
-Mood temporarily shifts negative (hours)
-      ↓
-Personality unchanged (still warm, curious)
-      ↓
-Trust decreases (relationship layer)
+
+```mermaid
+flowchart TD
+    A[User insults the agent] --> B[Emotion = hurt\nimmediate, high intensity]
+    B --> C[Mood temporarily shifts negative\nhours]
+    C --> D[Personality unchanged\nstill warm, curious]
+    D --> E[Trust decreases\nrelationship layer]
 ```
 
 ### State Variables (Separated)
@@ -946,24 +870,15 @@ graph LR
 
 ### Improvement 8: Memory is Bidirectional
 
-Old approach:
-```
-Memory → response
-```
-
-Upgraded approach:
-```
-Memory ↔ current reasoning
-       ↓
-Current interaction
-       ↓
-New emotional experience
-       ↓
-Memory update
-       ↓
-Relationship update
-       ↓
-Future behavior
+```mermaid
+flowchart TD
+    A[Memory] <-->|bidirectional| B[Current Reasoning]
+    B --> C[Current Interaction]
+    C --> D[New Emotional Experience]
+    D --> E[Memory Update]
+    E --> F[Relationship Update]
+    F --> G[Future Behavior]
+    G --> B
 ```
 
 This creates **longitudinal consistency** — the agent's past genuinely shapes its future.
@@ -1149,22 +1064,15 @@ stateDiagram-v2
 
 This is the major research contribution. Emotion does NOT just change words — it changes the entire cognitive process.
 
-```
-Emotion
-  ↓
-Attention (what do I notice?)
-  ↓
-Memory retrieval (what do I remember?)
-  ↓
-Interpretation (what does this mean?)
-  ↓
-Goal priority (what matters most now?)
-  ↓
-Decision (what should I do?)
-  ↓
-Response
-  ↓
-Voice + Face + Behavior
+```mermaid
+flowchart TD
+    EM[Emotion] --> AT[Attention\nWhat do I notice?]
+    AT --> MR[Memory Retrieval\nWhat do I remember?]
+    MR --> IN[Interpretation\nWhat does this mean?]
+    IN --> GP[Goal Priority\nWhat matters most now?]
+    GP --> DE[Decision\nWhat should I do?]
+    DE --> RE[Response]
+    RE --> VFB[Voice + Face + Behavior]
 ```
 
 This allows us to experimentally prove:
@@ -1180,32 +1088,16 @@ This allows us to experimentally prove:
 
 ### Reasoning Pipeline [OUR PROPOSED]
 
-```
-1. ATTENTION FILTER
-   Affective state biases which aspects of user input are attended to
-   (high stress → attend to distress signals; high curiosity → attend to novel info)
-
-2. MEMORY RETRIEVAL
-   Emotion-weighted retrieval (see Section 9)
-
-3. INTERPRETATION LAYER
-   Appraisal reframes the event before reasoning
-   (same words interpreted differently based on trust level + current mood)
-
-4. GOAL PRIORITIZATION
-   Current affect shifts goal weights
-   (high attachment → prioritize connection goal over information goal)
-
-5. RISK SENSITIVITY
-   Arousal + valence modulate risk tolerance
-   (negative valence → more cautious responses)
-
-6. RESPONSE STRATEGY SELECTION
-   Behavior planner selects strategy before LLM generates text
-
-7. LLM GENERATION
-   LLM receives: context + retrieved memories + behavior plan + response strategy
-   NOT just "you are sad"
+```mermaid
+flowchart TD
+    AF[Affective State] --> AT[1. ATTENTION FILTER\nBiases which aspects of input are attended to]
+    AT --> MR[2. MEMORY RETRIEVAL\nEmotion-weighted retrieval]
+    MR --> IL[3. INTERPRETATION LAYER\nAppraisal reframes event before reasoning]
+    IL --> GP[4. GOAL PRIORITIZATION\nAffect shifts goal weights]
+    GP --> RS[5. RISK SENSITIVITY\nArousal + valence modulate risk tolerance]
+    RS --> SS[6. RESPONSE STRATEGY SELECTION\nBehavior planner selects strategy]
+    SS --> LG[7. LLM GENERATION\nContext + memories + behavior plan]
+    LG --> OUT[Response Output]
 ```
 
 ### LLM Context Construction
@@ -1237,24 +1129,16 @@ def build_llm_context(user_state, affect_state, memories, behavior_plan, relatio
 
 v2.0 had a static rule-based policy. v2.1 adds a **feedback-driven policy improvement loop**.
 
-```
-State
-  ↓
-Behavior candidates
-  ↓
-Policy
-  ↓
-Consistency checker
-  ↓
-Output
-  ↓
-User reaction (engagement, affect change, explicit feedback)
-  ↓
-Reward / evaluation signal
-  ↓
-Policy improvement
-  ↓
-(next interaction)
+```mermaid
+flowchart TD
+    S[State] --> BC[Behavior Candidates]
+    BC --> PO[Policy]
+    PO --> CC[Consistency Checker]
+    CC --> OU[Output]
+    OU --> UR[User Reaction\nengagement, affect change, feedback]
+    UR --> RW[Reward / Evaluation Signal]
+    RW --> PI[Policy Improvement]
+    PI --> PO
 ```
 
 ```python
@@ -1295,26 +1179,20 @@ This means the system is NOT static — it improves its behavioral decisions ove
 
 ### Behavior Policy as Formal Central Controller (from v2.0)
 
-```
-                INTERNAL STATE
-                     ↓
-             BEHAVIOR POLICY
-                     ↓
-          Candidate behaviors
-                     ↓
-       ┌─────────────┼─────────────┐
-       ↓             ↓             ↓
-     Text          Voice          Face
-       ↓             ↓             ↓
-       └─────────────┼─────────────┘
-                     ↓
-              Consistency Check
-                     ↓
-              Final behavior
-                     ↓
-              User reaction
-                     ↓
-              Policy update
+```mermaid
+flowchart TD
+    IS[Internal State] --> BP[Behavior Policy]
+    BP --> CB[Candidate Behaviors]
+    CB --> T[Text]
+    CB --> V[Voice]
+    CB --> F[Face]
+    T --> CC[Consistency Check]
+    V --> CC
+    F --> CC
+    CC --> FB[Final Behavior]
+    FB --> UR[User Reaction]
+    UR --> PU[Policy Update]
+    PU --> BP
 ```
 
 ### Human-Like ≠ Maximum Realism (from v2.0)
@@ -1411,15 +1289,15 @@ graph TD
 
 ## 14. VOICE ARCHITECTURE [OUR PROPOSED]
 
-### Pipeline
+### Voice Pipeline
 
-```
-LLM Response Text
-→ Prosody Planner (from Behavior Plan)
-→ SSML / Prosody Markup
-→ TTS Engine
-→ Audio Stream
-→ Avatar Lip Sync
+```mermaid
+flowchart LR
+    LR[LLM Response Text] --> PP[Prosody Planner\nfrom Behavior Plan]
+    PP --> SM[SSML / Prosody Markup]
+    SM --> TT[TTS Engine]
+    TT --> AS[Audio Stream]
+    AS --> LS[Avatar Lip Sync]
 ```
 
 ### Prosody Control Parameters
@@ -1482,12 +1360,13 @@ def validate_voice_emotion(prosody_plan, behavior_plan):
 
 ### Facial Expression Pipeline
 
-```
-Behavior Plan { facial_expression, micro_expression, intensity }
-→ Blendshape Weight Calculator
-→ AU Vector → Blendshape Weights [52 ARKit / 64 custom]
-→ Temporal Smoother (prevent snapping)
-→ Avatar Renderer
+```mermaid
+flowchart TD
+    BP[Behavior Plan\nfacial_expression, micro_expression, intensity] --> BWC[Blendshape Weight Calculator]
+    BWC --> AUV[AU Vector]
+    AUV --> BW[Blendshape Weights\n52 ARKit / 64 custom]
+    BW --> TS[Temporal Smoother\nprevent snapping]
+    TS --> AR[Avatar Renderer]
 ```
 
 ### Blendshape Mapping (Examples)
@@ -1938,11 +1817,22 @@ SERVER → CLIENT:
 
 ### Session Token Architecture (Inspired by Anam)
 
-```
-Client → POST /api/sessions → Server generates short-lived JWT session token
-Client uses session token for WebSocket auth
-Session token never exposes LLM API keys or DB credentials to client
-Token expires after session ends or timeout
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Session Token Server
+    participant WS as WebSocket Server
+    participant DB as DB / LLM APIs
+
+    C->>S: POST /api/sessions
+    S->>S: Generate short-lived JWT
+    S-->>C: session_token (JWT)
+    C->>WS: Connect with session_token
+    WS->>WS: Validate JWT
+    WS-->>C: Connection established
+    WS->>DB: Access using server-side credentials
+    Note over C,DB: LLM API keys and DB credentials\nnever exposed to client
+    Note over C,S: Token expires on session end or timeout
 ```
 
 ### Data Privacy
@@ -1966,37 +1856,47 @@ Token expires after session ends or timeout
 
 ### Streaming-First Design
 
-```
-ASR streams partial transcripts → Fusion starts early
-LLM streams tokens → TTS starts on first sentence
-TTS streams audio → Avatar starts on first audio chunk
-Face expression → Sent ahead of audio (pre-expression)
+```mermaid
+flowchart TD
+    A[ASR streams partial transcripts] --> B[Fusion starts early]
+    C[LLM streams tokens] --> D[TTS starts on first sentence]
+    D --> E[TTS streams audio]
+    E --> F[Avatar starts on first audio chunk]
+    G[Behavior Plan generated] --> H[Face expression sent immediately t=0]
+    H --> I[Pre-expression shown 200-400ms before audio]
 ```
 
 ### Pre-Expression Technique [OUR PROPOSED]
 
 The avatar begins showing the emotional expression 200–400ms BEFORE the first audio word arrives, matching human behavior where facial expression precedes speech.
 
-```
-Behavior Plan generated
-→ Face expression sent immediately (t=0)
-→ Pause (behavior_plan.pause_before_ms)
-→ TTS audio starts (t = pause_ms)
-→ Lip sync follows audio
+```mermaid
+flowchart LR
+    BP[Behavior Plan generated] --> FE[Face expression sent\nt=0]
+    FE --> PA[Pause\nbehavior_plan.pause_before_ms]
+    PA --> TA[TTS audio starts\nt = pause_ms]
+    TA --> LS[Lip sync follows audio]
 ```
 
 ### Parallel Processing
 
-```
-User turn ends
-├── ASR finalization          (parallel)
-├── Facial analysis           (parallel)
-├── Voice prosody analysis    (parallel)
-└── Text emotion analysis     (parallel)
-    ↓ all complete
-    Fusion → Appraisal → State Update → Memory Retrieval
-    ↓
-    Behavior Plan → LLM (streaming) → TTS (streaming) → Avatar
+```mermaid
+flowchart TD
+    UT[User turn ends] --> A[ASR finalization]
+    UT --> B[Facial analysis]
+    UT --> C[Voice prosody analysis]
+    UT --> D[Text emotion analysis]
+    A --> F[Fusion]
+    B --> F
+    C --> F
+    D --> F
+    F --> AP[Appraisal]
+    AP --> SU[State Update]
+    SU --> MR[Memory Retrieval]
+    MR --> BPL[Behavior Plan]
+    BPL --> LLM[LLM streaming]
+    LLM --> TTS[TTS streaming]
+    TTS --> AV[Avatar]
 ```
 
 ---
@@ -2004,6 +1904,15 @@ User turn ends
 ## 22. FAILURE HANDLING [OUR PROPOSED]
 
 ### Conflicting Modalities
+
+```mermaid
+flowchart TD
+    CD{conflict_detected?} -->|yes| TNV[Trust non-verbal over verbal\nweight_text x= 0.5]
+    TNV --> FL[Flag for logging\nmodality_conflict + conflict_type]
+    FL --> UU[Increase uncertainty\nuser_state.uncertainty += 0.2]
+    UU --> DR[Pass to downstream reasoning\nwith elevated uncertainty]
+    CD -->|no| PR[Proceed normally]
+```
 
 ```python
 if conflict_detected:
@@ -2517,22 +2426,15 @@ sequenceDiagram
 
 Runs at end of each session (or after emotionally significant events).
 
-```
-Conversation ends
-       ↓
-Reflection Engine
-       ↓
-What happened this session?
-       ↓
-What did the user feel?
-       ↓
-What did the agent feel/state?
-       ↓
-Was the agent's response appropriate?
-       ↓
-What should be remembered?
-       ↓
-Update memory + affective state baseline
+```mermaid
+flowchart TD
+    CE[Conversation ends] --> RE[Reflection Engine]
+    RE --> WH[What happened this session?]
+    WH --> UF[What did the user feel?]
+    UF --> AF[What did the agent feel / state?]
+    AF --> WA[Was the agent's response appropriate?]
+    WA --> WR[What should be remembered?]
+    WR --> UM[Update memory + affective state baseline]
 ```
 
 ```python
@@ -2634,20 +2536,18 @@ class NaturalTimingEngine:
 ```
 
 Turn-Taking Decision Tree:
-```
-User stops speaking
-       ↓
-Should I respond immediately?
-       ↓
-No  → short pause (400–800ms)
-       ↓
-Maybe → backchannel ("mm-hmm", nod)
-       ↓
-Yes → response (with pre-expression)
-       ↓
-Uncertain about user state?
-       ↓
-Yes → gentle check-in question first
+
+```mermaid
+flowchart TD
+    A[User stops speaking] --> B{Should I respond immediately?}
+    B -->|No| C[Short pause\n400–800ms]
+    B -->|Maybe| D[Backchannel\nmm-hmm / nod]
+    B -->|Yes| E[Response\nwith pre-expression]
+    C --> F{Uncertain about user state?}
+    D --> F
+    E --> F
+    F -->|Yes| G[Gentle check-in question first]
+    F -->|No| H[Proceed with response]
 ```
 
 ---
@@ -2656,16 +2556,20 @@ Yes → gentle check-in question first
 
 Explicit optimization layer. Human-likeness is the goal, not an assumption.
 
-```
-                  HUMAN-LIKENESS
-                       ↓
-        ┌──────────────┼──────────────┐
-        ↓              ↓              ↓
-   Naturalness    Coherence       Social Presence
-        ↓              ↓              ↓
-      Voice          Emotion         Behavior
-      Timing         Face            Gaze
-      Pauses         Gesture         Memory
+```mermaid
+graph TD
+    HL[HUMAN-LIKENESS] --> N[Naturalness]
+    HL --> C[Coherence]
+    HL --> SP[Social Presence]
+    N --> V[Voice]
+    N --> T[Timing]
+    N --> P[Pauses]
+    C --> E[Emotion]
+    C --> F[Face]
+    C --> G[Gesture]
+    SP --> B[Behavior]
+    SP --> GZ[Gaze]
+    SP --> M[Memory]
 ```
 
 ```python
@@ -2755,35 +2659,45 @@ Metrics this layer optimizes:
 
 This is the strongest experiment in the project. It proves affect is CAUSAL, not merely correlated.
 
-```
-Setup:
-  Same user
-  Same input text
-  Same memory store
-  Same relationship state
-  Same LLM
-  Same avatar
+```mermaid
+graph TD
+    subgraph FIXED["HELD CONSTANT"]
+        U[Same User]
+        I[Same Input Text]
+        MS[Same Memory Store]
+        RS[Same Relationship State]
+        L[Same LLM]
+        AV[Same Avatar]
+    end
 
-Intervention: ONLY affective state is changed
+    subgraph INTERVENTION["INTERVENTION — Only Affective State Changes"]
+        C1[Condition 1\nvalence = +0.7\npositive affect]
+        C2[Condition 2\nvalence = 0.0\nneutral affect]
+        C3[Condition 3\nvalence = -0.7\nnegative affect]
+    end
 
-  Condition 1: valence = +0.7  (positive affect)
-  Condition 2: valence =  0.0  (neutral affect)
-  Condition 3: valence = -0.7  (negative affect)
+    subgraph MEASURE["MEASURE ALL DOWNSTREAM DIFFERENCES"]
+        M1[1. Memories retrieved]
+        M2[2. LLM reasoning path]
+        M3[3. Response strategy]
+        M4[4. Response text]
+        M5[5. Voice prosody params]
+        M6[6. Facial blendshape weights]
+        M7[7. Response timing]
+        M8[8. Behavior plan]
+    end
 
-Measure ALL downstream differences:
-  1. Which memories were retrieved?
-  2. What was the LLM reasoning path?
-  3. What response strategy was selected?
-  4. What was the response text?
-  5. What were the voice prosody parameters?
-  6. What were the facial blendshape weights?
-  7. What was the response timing?
-  8. What was the behavior plan?
+    subgraph STATS["STATISTICAL TEST"]
+        S1[ANOVA across 3 conditions]
+        S2[Effect size — Cohen's d]
+        S3[p < 0.05 required]
+    end
 
-Statistical test:
-  ANOVA across 3 conditions for each measure
-  Effect size (Cohen's d) for each measure
-  p < 0.05 required to claim causal effect
+    FIXED --> INTERVENTION
+    C1 --> MEASURE
+    C2 --> MEASURE
+    C3 --> MEASURE
+    MEASURE --> STATS
 ```
 
 If affect changes memory retrieval, reasoning, strategy, voice, and face — even when everything else is held constant — then affect is causally driving behavior, not just labeling it.
@@ -2794,17 +2708,17 @@ If affect changes memory retrieval, reasoning, strategy, voice, and face — eve
 
 Do NOT say "98% human." Define a measurable composite index.
 
-```
-Human-Likeness Index (HLI) = weighted composite of:
-
-  Conversational naturalness     (weight: 0.20)
-  Emotional appropriateness      (weight: 0.20)
-  Cross-modal coherence          (weight: 0.15)
-  Timing naturalness             (weight: 0.15)
-  Memory consistency             (weight: 0.10)
-  Personality consistency        (weight: 0.10)
-  Social presence                (weight: 0.05)
-  Uncanny-valley score (inverted)(weight: 0.05)
+```mermaid
+graph TD
+    HLI[Human-Likeness Index HLI\nWeighted Composite Score]
+    HLI --> CN[Conversational Naturalness\nweight: 0.20]
+    HLI --> EA[Emotional Appropriateness\nweight: 0.20]
+    HLI --> CMC[Cross-Modal Coherence\nweight: 0.15]
+    HLI --> TN[Timing Naturalness\nweight: 0.15]
+    HLI --> MC[Memory Consistency\nweight: 0.10]
+    HLI --> PC[Personality Consistency\nweight: 0.10]
+    HLI --> SOP[Social Presence\nweight: 0.05]
+    HLI --> UV[Uncanny-Valley Score inverted\nweight: 0.05]
 ```
 
 ```python
@@ -2844,14 +2758,14 @@ Current v2.1 memory is bidirectional but flat (memories are nodes, retrieval is 
 
 Future v3.0 will evolve memory as a **graph where edges between memories also evolve**:
 
-```
-Memory A ─── Memory B
-   │             │
-   └── emotion ──┘
-         ↓
- relationship strength
-         ↓
- future retrieval
+```mermaid
+graph TD
+    MA[Memory A] <-->|emotional co-occurrence| MB[Memory B]
+    MA --> ES[Emotional Similarity]
+    MB --> ES
+    ES --> EW[Edge Weight]
+    EW --> RS[Relationship Strength]
+    RS --> FR[Future Retrieval Priority]
 ```
 
 ```python
