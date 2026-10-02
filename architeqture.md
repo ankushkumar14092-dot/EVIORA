@@ -2919,3 +2919,399 @@ For every component, the exact build strategy:
 *Architecture score: 9.4/10*
 *Classification: Internal Research*
 *Last updated: 2025*
+
+---
+
+## APPENDIX G — MICROSERVICES ARCHITECTURE [OUR PROPOSED]
+
+### G.1 Why Microservices for EVIORA
+
+Each layer of EVIORA has fundamentally different:
+- compute requirements (GPU vs CPU vs memory-heavy)
+- scaling patterns (stateless vs stateful)
+- latency requirements (real-time vs async)
+- deployment frequency (ML models vs business logic)
+- failure domains (one service failing must not crash the whole system)
+
+Microservices allow each layer to scale, deploy, and fail independently.
+
+---
+
+### G.2 Service Decomposition
+
+```mermaid
+graph TD
+    subgraph CLIENT["CLIENT TIER"]
+        WEB[Web Client\nNext.js / TypeScript]
+    end
+
+    subgraph GATEWAY["API GATEWAY TIER"]
+        GW[API Gateway\nFastAPI + JWT Auth]
+        ST[Session Token Service\nFastAPI]
+    end
+
+    subgraph PERCEPTION["PERCEPTION TIER (GPU)"]
+        ASR_SVC[ASR Service\nfaster-whisper]
+        FACE_SVC[Facial Analysis Service\npy-feat + MediaPipe]
+        VOICE_SVC[Voice Prosody Service\nSpeechBrain + openSMILE]
+        GAZE_SVC[Gaze Service\nMediaPipe + L2CS-Net]
+        TEXT_SVC[Text Emotion Service\nRoBERTa]
+    end
+
+    subgraph FUSION["FUSION TIER (CPU)"]
+        FUSE_SVC[Fusion Service\nMultimodal State Estimator]
+        CAL_SVC[Calibration Service\nPersonalized Learner]
+        APP_SVC[Appraisal Service\nCognitive Appraisal Engine]
+    end
+
+    subgraph STATE["STATE TIER (Stateful)"]
+        AFFECT_SVC[Affective State Service\nEmotion + Mood + Personality]
+        REL_SVC[Relationship Service\nRelationship Engine]
+    end
+
+    subgraph MEMORY["MEMORY TIER"]
+        MEM_SVC[Memory Service\nEpisodic + Emotional + Semantic]
+        REFL_SVC[Reflection Service\nPost-session Reflection]
+    end
+
+    subgraph REASONING["REASONING TIER"]
+        REASON_SVC[Reasoning Service\nAffect-Conditioned Cognition]
+        BEHAV_SVC[Behavior Planner Service\nPolicy + Consistency Checker]
+    end
+
+    subgraph OUTPUT["OUTPUT TIER"]
+        TTS_SVC[TTS Service\nCartesia / ElevenLabs]
+        FACE_OUT_SVC[Face Output Service\nBlendshape Controller]
+        TIMING_SVC[Timing Service\nNatural Timing Engine]
+        HLC_SVC[Human-Likeness Service\nUncanny Valley Guard]
+    end
+
+    subgraph TRANSPORT["TRANSPORT TIER"]
+        LIVEKIT[LiveKit WebRTC Server]
+    end
+
+    subgraph DATA["DATA TIER"]
+        POSTGRES[(PostgreSQL + pgvector)]
+        REDIS[(Redis)]
+        S3[(S3 / Object Store)]
+    end
+
+    subgraph OBS["OBSERVABILITY"]
+        OTEL[OpenTelemetry Collector]
+        PROM[Prometheus]
+        GRAF[Grafana]
+    end
+
+    WEB <-->|WebSocket + WebRTC| GW
+    GW --> ST
+    GW --> ASR_SVC
+    GW --> FACE_SVC
+    GW --> VOICE_SVC
+    GW --> GAZE_SVC
+
+    ASR_SVC --> TEXT_SVC
+    ASR_SVC --> FUSE_SVC
+    VOICE_SVC --> FUSE_SVC
+    FACE_SVC --> FUSE_SVC
+    GAZE_SVC --> FUSE_SVC
+    TEXT_SVC --> FUSE_SVC
+
+    FUSE_SVC --> CAL_SVC
+    CAL_SVC --> APP_SVC
+    APP_SVC --> AFFECT_SVC
+    APP_SVC --> REL_SVC
+
+    AFFECT_SVC --> MEM_SVC
+    AFFECT_SVC --> REASON_SVC
+    REL_SVC --> REASON_SVC
+    MEM_SVC --> REASON_SVC
+
+    REASON_SVC --> BEHAV_SVC
+    BEHAV_SVC --> TTS_SVC
+    BEHAV_SVC --> FACE_OUT_SVC
+    BEHAV_SVC --> TIMING_SVC
+    TIMING_SVC --> HLC_SVC
+    FACE_OUT_SVC --> HLC_SVC
+
+    TTS_SVC --> LIVEKIT
+    HLC_SVC --> LIVEKIT
+    LIVEKIT <--> WEB
+
+    AFFECT_SVC --> REDIS
+    REL_SVC --> REDIS
+    MEM_SVC --> POSTGRES
+    CAL_SVC --> POSTGRES
+    REFL_SVC --> POSTGRES
+    TTS_SVC --> S3
+
+    AFFECT_SVC --> REFL_SVC
+    MEM_SVC --> REFL_SVC
+
+    GW --> OTEL
+    AFFECT_SVC --> OTEL
+    REASON_SVC --> OTEL
+    OTEL --> PROM
+    PROM --> GRAF
+```
+
+---
+
+### G.3 Service Catalog
+
+| Service | Responsibility | Compute | Scaling | State |
+|---|---|---|---|---|
+| API Gateway | Auth, routing, rate limiting | CPU | Horizontal | Stateless |
+| Session Token Service | JWT generation, session lifecycle | CPU | Horizontal | Stateless |
+| ASR Service | Whisper streaming transcription | GPU | Horizontal | Stateless |
+| Facial Analysis Service | py-feat AU detection, MediaPipe | GPU | Horizontal | Stateless |
+| Voice Prosody Service | SpeechBrain, openSMILE features | CPU/GPU | Horizontal | Stateless |
+| Gaze Service | MediaPipe + L2CS-Net | GPU | Horizontal | Stateless |
+| Text Emotion Service | RoBERTa inference | GPU | Horizontal | Stateless |
+| Fusion Service | Multimodal state estimation | CPU | Horizontal | Stateless |
+| Calibration Service | Learned per-user modality weights | CPU | Horizontal | Reads from DB |
+| Appraisal Service | Cognitive appraisal engine | CPU | Horizontal | Stateless |
+| Affective State Service | Emotion/Mood/Personality engine | CPU | **Single writer per user** | Stateful (Redis) |
+| Relationship Service | Relationship state engine | CPU | **Single writer per user** | Stateful (Redis) |
+| Memory Service | Episodic/emotional/semantic store | CPU | Read replicas | Stateful (Postgres) |
+| Reflection Service | Post-session reflection | CPU | Horizontal (async) | Writes to Postgres |
+| Reasoning Service | Affect-conditioned LLM pipeline | CPU + LLM API | Horizontal | Stateless |
+| Behavior Planner Service | Policy + consistency checker | CPU | Horizontal | Stateless |
+| TTS Service | Cartesia / ElevenLabs proxy | CPU | Horizontal | Stateless |
+| Face Output Service | Blendshape controller | CPU | Horizontal | Stateless |
+| Timing Service | Natural timing engine | CPU | Horizontal | Stateless |
+| Human-Likeness Service | Uncanny valley guard, HLC | CPU | Horizontal | Stateless |
+| LiveKit Server | WebRTC media transport | CPU/Network | Room-based | Stateful |
+
+---
+
+### G.4 Inter-Service Communication
+
+```
+SYNCHRONOUS (request-response, low latency path):
+  API Gateway → Perception Services     gRPC / HTTP/2
+  Fusion → Appraisal → State            gRPC
+  State → Memory → Reasoning            gRPC
+  Reasoning → Behavior → Output         gRPC
+  Output → LiveKit                      WebRTC / gRPC
+
+ASYNCHRONOUS (event-driven, non-blocking):
+  Perception results → Fusion           Message queue (Redis Streams)
+  State updates → DB persistence        Async write-behind (Redis → Postgres)
+  Session end → Reflection              Event (Redis Streams)
+  Reflection → Memory update            Async (Redis Streams)
+  Policy reward signals → Calibration   Async batch (Redis Streams)
+  Observability events → OTEL           Fire-and-forget
+```
+
+```mermaid
+graph LR
+    subgraph SYNC["SYNCHRONOUS PATH (gRPC)"]
+        P[Perception] -->|gRPC| F[Fusion]
+        F -->|gRPC| A[Appraisal]
+        A -->|gRPC| S[State]
+        S -->|gRPC| R[Reasoning]
+        R -->|gRPC| B[Behavior]
+        B -->|gRPC| O[Output]
+    end
+
+    subgraph ASYNC["ASYNC PATH (Redis Streams)"]
+        S2[State Service] -->|stream| DB[Postgres Write]
+        SE[Session End Event] -->|stream| REFL[Reflection Service]
+        REFL -->|stream| MEM[Memory Update]
+        OUT[Output Result] -->|stream| REWARD[Policy Reward]
+    end
+```
+
+---
+
+### G.5 Service Contracts (API Schemas)
+
+#### ASR Service
+```
+POST /transcribe/stream
+Input:  audio_chunk { data: bytes, session_id, timestamp }
+Output: { transcript, words: [{word, start_ms, end_ms, confidence}],
+          is_final: bool, session_id }
+```
+
+#### Fusion Service
+```
+POST /fuse
+Input:  { text_state, voice_state, face_state, gaze_state,
+          user_id, session_id, history_window }
+Output: { user_state_vector, uncertainty, conflict_detected,
+          conflict_type, ambiguity_flag }
+```
+
+#### Affective State Service
+```
+GET  /state/{user_id}
+Output: { emotion, mood, personality, session_id, timestamp }
+
+POST /state/{user_id}/update
+Input:  { appraisal_state, delta_t, session_id }
+Output: { new_state, delta, mood_updated: bool }
+```
+
+#### Memory Service
+```
+POST /memories/retrieve
+Input:  { query, user_id, current_affect, relationship_state, k }
+Output: { memories: [MemoryRecord], retrieval_scores }
+
+POST /memories/store
+Input:  { event, user_id, session_id, appraisal, affect_delta }
+Output: { memory_id, importance_score }
+```
+
+#### Behavior Planner Service
+```
+POST /plan
+Input:  { affect_state, user_state, relationship_state,
+          appraisal_state, retrieved_memories, llm_response }
+Output: { behavior_plan, consistency_check_passed,
+          corrections_applied: [str] }
+```
+
+#### Reflection Service
+```
+POST /reflect
+Input:  { session_id, user_id, turns, affect_trajectory,
+          relationship_state }
+Output: { reflection_memory_id, mood_baseline_updated: bool,
+          lessons: [str] }
+```
+
+---
+
+### G.6 Data Flow — Microservices Sequence
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant GW as API Gateway
+    participant PERC as Perception Services
+    participant FUSE as Fusion + Calibration
+    participant APP as Appraisal
+    participant STATE as Affective State
+    participant MEM as Memory
+    participant REASON as Reasoning
+    participant BEHAV as Behavior Planner
+    participant OUT as Output Services
+    participant LK as LiveKit
+
+    U->>GW: audio + video stream
+    GW->>PERC: route to ASR, Face, Voice, Gaze (parallel)
+    PERC-->>FUSE: all modality outputs
+    FUSE->>FUSE: fuse + calibrate + uncertainty
+    FUSE->>APP: user state vector
+    APP->>APP: cognitive appraisal
+    APP->>STATE: appraisal state
+    STATE->>STATE: update emotion/mood
+    STATE->>MEM: emotion-aware retrieval
+    MEM-->>REASON: retrieved memories
+    STATE-->>REASON: affect state
+    REASON->>REASON: affect-conditioned cognition
+    REASON->>REASON: LLM generation
+    REASON->>BEHAV: response + affect state
+    BEHAV->>BEHAV: behavior plan
+    BEHAV->>BEHAV: consistency check
+    BEHAV->>OUT: behavior plan
+    OUT->>OUT: TTS + blendshapes + timing + HLC
+    OUT->>LK: audio + face data
+    LK->>U: WebRTC stream
+    STATE-->>MEM: async store new memory
+    STATE-->>REDIS: async persist state
+```
+
+---
+
+### G.7 Failure Isolation
+
+Each service has its own failure boundary. One service failing does NOT crash the system.
+
+| Service Failure | Degraded Mode | User Impact |
+|---|---|---|
+| Facial Analysis Service | Fusion uses text + voice only | Slightly lower emotion accuracy |
+| Voice Prosody Service | Fusion uses text + face only | Slightly lower emotion accuracy |
+| Memory Service | Reasoning proceeds without memories | Less contextual responses |
+| Reflection Service | Skipped silently | No long-term learning this session |
+| Calibration Service | Falls back to generic weights | Less personalized fusion |
+| TTS Service | Retry → fallback provider | Slight latency increase |
+| Behavior Planner Service | Fallback to default behavior plan | Less emotionally nuanced response |
+| LiveKit | Reconnect with state preserved in Redis | Brief interruption |
+| Affective State Service | Reset to neutral + mood baseline | Loss of current session affect |
+
+---
+
+### G.8 Deployment Architecture (Microservices)
+
+```mermaid
+graph TD
+    subgraph K8S["Kubernetes Cluster (AWS EKS)"]
+        subgraph GPU_NODES["GPU Node Pool"]
+            ASR_POD[ASR Service\n2x replicas]
+            FACE_POD[Facial Analysis\n2x replicas]
+            VOICE_POD[Voice Prosody\n2x replicas]
+            TEXT_POD[Text Emotion\n2x replicas]
+        end
+
+        subgraph CPU_NODES["CPU Node Pool"]
+            GW_POD[API Gateway\n3x replicas]
+            FUSE_POD[Fusion Service\n3x replicas]
+            APP_POD[Appraisal Service\n3x replicas]
+            REASON_POD[Reasoning Service\n3x replicas]
+            BEHAV_POD[Behavior Planner\n3x replicas]
+            OUT_POD[Output Services\n3x replicas]
+        end
+
+        subgraph STATEFUL_NODES["Stateful Node Pool"]
+            STATE_POD[Affective State Service\n1 writer + 1 standby per user shard]
+            REL_POD[Relationship Service\n1 writer + 1 standby per user shard]
+            MEM_POD[Memory Service\n1 writer + 2 read replicas]
+        end
+    end
+
+    subgraph MANAGED["Managed Services (AWS)"]
+        RDS[(PostgreSQL RDS\nMulti-AZ)]
+        ELASTICACHE[(Redis ElastiCache\nCluster Mode)]
+        S3_STORE[(S3)]
+        LK_CLOUD[LiveKit Cloud]
+    end
+
+    subgraph CDN["Edge"]
+        CF[CloudFront + Vercel Edge]
+    end
+
+    CF --> GW_POD
+    STATE_POD --> ELASTICACHE
+    MEM_POD --> RDS
+    OUT_POD --> LK_CLOUD
+```
+
+### G.9 Service Sizing (MVP → Production)
+
+| Service | MVP | Research Prototype | Production |
+|---|---|---|---|
+| ASR | 1 pod, shared GPU | 2 pods, dedicated GPU | Auto-scale GPU pool |
+| Facial Analysis | 1 pod, shared GPU | 2 pods, dedicated GPU | Auto-scale GPU pool |
+| Fusion | 1 pod, CPU | 2 pods | Auto-scale |
+| Affective State | 1 pod, in-memory | 1 pod + Redis | Sharded per user |
+| Memory | SQLite (MVP) | Postgres + pgvector | RDS Multi-AZ |
+| Reasoning | 1 pod + GPT-4o API | 2 pods | Auto-scale |
+| LiveKit | LiveKit Cloud | LiveKit Cloud | Self-hosted or Cloud |
+
+---
+
+### G.10 Service Communication Security
+
+```
+All inter-service communication: mTLS (mutual TLS)
+Service mesh: Istio or Linkerd
+API Gateway → Services: JWT validation at gateway
+Services → DB: IAM-based credentials (no hardcoded secrets)
+Secrets management: AWS Secrets Manager / HashiCorp Vault
+Network policy: Services only accept traffic from known peers
+```
+
+---
